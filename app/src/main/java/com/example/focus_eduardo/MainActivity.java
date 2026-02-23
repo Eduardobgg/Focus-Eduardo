@@ -1,4 +1,7 @@
 package com.example.focus_eduardo;
+/*
+ * @author Eduardo Biali
+ */
 
 import android.os.Bundle;
 
