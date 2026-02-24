@@ -1,7 +1,8 @@
 package com.example.focus_eduardo;
 /**
- * @author <a href= mauriciofm29@ciencias.unam.mx>  Mauricio Flores Muñoz - @maufloresm</a>
+ * @author Eduardo Biali García Gómez
  */
+
 import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
