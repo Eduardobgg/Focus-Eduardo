@@ -1,19 +1,202 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:background="@color/color_background">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:orientation="vertical"
+        android:paddingLeft="@dimen/screen_padding_horizontal"
+        android:paddingRight="@dimen/screen_padding_horizontal"
+        android:paddingTop="@dimen/spacing_lg"
+        android:paddingBottom="@dimen/spacing_lg"
+        android:gravity="center_horizontal">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- título y botones de navegación ====== -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Focus Timer"
+                android:textColor="@color/white"
+                android:textSize="@dimen/app_title_size"
+                android:textStyle="bold"
+                android:layout_centerVertical="true"/>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/btnStats"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_report_image"
+                    app:tint="@color/white"/>
+
+                <ImageButton
+                    android:id="@+id/btnSettings"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_preferences"
+                    app:tint="@color/white" />
+
+            </LinearLayout>
+        </RelativeLayout>
+
+        <!-- Seleccionar modo -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupMode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/chip_group_margin_top"
+            app:chipSpacing="@dimen/chip_spacing"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFocus"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Enfoque"
+                android:textColor="@color/white"
+                app:chipBackgroundColor="@color/color_primary"
+                app:chipStrokeColor="@color/color_border"
+                app:chipStrokeWidth="2dp"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipBreak"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Descanso"
+                android:textColor="@color/white"
+                app:chipBackgroundColor="@color/color_primary"
+                app:chipStrokeColor="@color/color_border"
+                app:chipStrokeWidth="2dp"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipRest"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Descanso Largo"
+                android:textColor="@color/white"
+                app:chipBackgroundColor="@color/color_primary"
+                app:chipStrokeColor="@color/color_border"
+                app:chipStrokeWidth="2dp"/>
+
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- Timer -->
+        <TextView
+            android:id="@+id/tvTimerDisplay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_lg"
+            android:fontFamily="monospace"
+            android:text="25:00"
+            android:textColor="@color/white"
+            android:textSize="@dimen/timer_text_size"
+            android:textStyle="bold"/>
+
+        <!-- Estado -->
+        <TextView
+            android:id="@+id/tvSessionStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Sesión de Enfoque"
+            android:textColor="@color/color_text_secondary"
+            android:textSize="16sp"/>
+
+        <!--Progreso -->
+        <!-- Este LinearLayout empieza vacío, agregaremos los puntos dinámicamente con addView() -->
+        <LinearLayout
+            android:id="@+id/sessionDotsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_md"
+            android:gravity="center"
+            android:orientation="horizontal"/>
+
+        <!-- Sesiones completadas -->
+        <TextView
+            android:id="@+id/tvSessionsCompleted"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Sesiones completadas: 0"
+            android:textColor="@color/color_text_secondary"
+            android:textSize="12sp"/>
+
+        <!-- Frase Motivacional -->
+        <TextView
+            android:id="@+id/tvMotivationalQuote"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_md"
+            android:layout_marginLeft="@dimen/spacing_md"
+            android:layout_marginRight="@dimen/spacing_md"
+            android:gravity="center"
+            android:text=""
+            android:textColor="@color/color_secondary"
+            android:textSize="@dimen/quote_text_size"
+            android:textStyle="italic"/>
+
+        <!-- Iniciar / Pausar-->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStartStop"
+            android:layout_width="@dimen/btn_primary_width"
+            android:layout_height="@dimen/btn_primary_height"
+            android:layout_marginTop="@dimen/spacing_lg"
+            android:text="Iniciar"
+            android:textSize="@dimen/btn_text_size"
+            app:backgroundTint="@color/color_secondary"
+            app:cornerRadius="@dimen/btn_corner_radius"/>
+
+        <!-- Reset y Skip -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_md"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReset"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="120dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="8dp"
+                android:text="Reset"
+                android:textColor="@color/white"
+                android:textSize="@dimen/btn_text_size"
+                app:cornerRadius="24dp"
+                app:strokeColor="@color/color_border"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSkip"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="120dp"
+                android:layout_height="48dp"
+                android:text="Saltar"
+                android:textColor="@color/white"
+                android:textSize="@dimen/btn_text_size"
+                app:cornerRadius="24dp"
+                app:strokeColor="@color/color_border"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
