@@ -15,7 +15,7 @@
         android:paddingBottom="@dimen/spacing_lg"
         android:gravity="center_horizontal">
 
-        <!-- título y botones de navegación ====== -->
+        <!-- título y botones de navegación -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
