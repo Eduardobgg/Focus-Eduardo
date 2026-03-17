@@ -6,9 +6,11 @@ package com.example.focus_eduardo;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Vibrator;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -30,18 +32,25 @@ public class MainActivity extends AppCompatActivity {
     private static final long REST_TIME  = 15 * 60 * 1000L;
 
     // VISTAS
-    private TextView       tvTimerDisplay;
-    private TextView       tvSessionStatus;
-    private TextView       tvSessionsCompleted;
+    private TextView tvTimerDisplay;
+    private TextView tvSessionStatus;
+    private TextView tvSessionsCompleted;
+    private TextView tvMotivationalQuote; // frase motivacional
     private MaterialButton btnStartStop;
-    private Chip           chipFocus, chipBreak, chipRest;
-    private LinearLayout   sessionDotsContainer;
+    private Chip chipFocus, chipBreak, chipRest;
+    private LinearLayout sessionDotsContainer;
 
     private CountDownTimer countDownTimer;
-    private boolean        isRunning              = false;
-    private int            currentState           = STATE_FOCUS;
-    private long           timeLeftInMillis;
-    private int            focusSessionsCompleted = 0; //  contador de sesiones
+    private boolean isRunning = false;
+    private int currentState = STATE_FOCUS;
+    private long timeLeftInMillis;
+    private int focusSessionsCompleted = 0; // contador de sesiones
+
+    //  frases que se muestran al iniciar un descanso
+    private final String[] motivationalQuotes = {"¡Buen trabajo! Descansa un momento.", "Cada descanso te hace más productivo.",
+            "El descanso es parte del éxito.", "Respira, recarga y vuelve con más fuerza.", "Pequeños pasos llevan a grandes logros.",
+            "La constancia supera al talento."
+    };
 
     // onCreate se ejecuta al abrir la app
     @Override
@@ -53,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
         tvTimerDisplay       = findViewById(R.id.tvTimerDisplay);
         tvSessionStatus      = findViewById(R.id.tvSessionStatus);
         tvSessionsCompleted  = findViewById(R.id.tvSessionsCompleted);
+        tvMotivationalQuote  = findViewById(R.id.tvMotivationalQuote);
         btnStartStop         = findViewById(R.id.btnStartStop);
         chipFocus            = findViewById(R.id.chipFocus);
         chipBreak            = findViewById(R.id.chipBreak);
@@ -119,11 +129,31 @@ public class MainActivity extends AppCompatActivity {
     // se ejecuta cuando el timer llega a cero
     // Si era enfoque, sube el contador y actualiza los puntos
     private void onSessionFinished() {
+        vibrate(); // vibrar al terminar cualquier sesión
+
         if (currentState == STATE_FOCUS) {
             focusSessionsCompleted++;
             tvSessionsCompleted.setText("Sesiones completadas: " + focusSessionsCompleted);
             updateDots();
+
+            // mostrar frase aleatoria al terminar enfoque
+            // Math.random() da un número entre 0.0 y 1.0
+            // lo multiplicamos por el tamaño del array para elegir un índice
+            int indiceAleatorio = (int)(Math.random() * motivationalQuotes.length);
+            tvMotivationalQuote.setText("\"" + motivationalQuotes[indiceAleatorio] + "\"");
+
+            // Toast de sesión completada
+            Toast.makeText(this, "¡Sesión completada! Tómate un descanso 🎉",
+                    Toast.LENGTH_LONG).show();
+        } else {
+            // Toast cuando termina el descanso
+            Toast.makeText(this, "¡Descanso terminado! Bien hecho 💪",
+                    Toast.LENGTH_SHORT).show();
+
+            // Limpiar la frase cuando regresa a enfoque
+            tvMotivationalQuote.setText("");
         }
+
         goToNextState();
     }
 
@@ -241,6 +271,19 @@ public class MainActivity extends AppCompatActivity {
             }
 
             sessionDotsContainer.addView(dot);
+        }
+    }
+
+    // hace vibrar el teléfono 500ms al terminar una sesión
+    private void vibrate() {
+        Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        if (vibrator != null && vibrator.hasVibrator()) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator.vibrate(android.os.VibrationEffect.createOneShot(
+                        500, android.os.VibrationEffect.DEFAULT_AMPLITUDE));
+            } else {
+                vibrator.vibrate(500);
+            }
         }
     }
 }
