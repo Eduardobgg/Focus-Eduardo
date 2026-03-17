@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -49,11 +50,20 @@ public class MainActivity extends AppCompatActivity {
     private int focusSessionsCompleted = 0; // contador de sesiones
 
     // frases que se muestran al iniciar un descanso, algunas las saque de un gran personaje de Overwatch
-    private final String[] motivationalQuotes = {"¡Buen trabajo! Descansa un momento.", "Cada descanso te hace más productivo.",
-            "El dolor es un excelente maestro", "Respira, recarga y vuelve con más fuerza.",
-            "Repara tus heridas", "La constancia supera al talento.", "Caerse es una oportunidad para levantarse de nuevo",
-            "Que la tranquilidad te envuelva", "Tómate un momento para meditar", "Encuentra la paz dentro de ti", "Experimenta la tranquilidad",
-            "La tentación de rendirse es mayor justo antes de la victoria"};
+    private final String[] motivationalQuotes = {
+            "¡Buen trabajo! Descansa un momento.",
+            "Cada descanso te hace más productivo.",
+            "El dolor es un excelente maestro",
+            "Respira, recarga y vuelve con más fuerza.",
+            "Repara tus heridas",
+            "La constancia supera al talento.",
+            "Caerse es una oportunidad para levantarse de nuevo",
+            "Que la tranquilidad te envuelva",
+            "Tómate un momento para meditar",
+            "Encuentra la paz dentro de ti",
+            "Experimenta la tranquilidad",
+            "La tentación de rendirse es mayor justo antes de la victoria"
+    };
 
     // onCreate se ejecuta al abrir la app
     @Override
@@ -62,23 +72,29 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Conectar variables con sus elementos del XML por ID
-        tvTimerDisplay = findViewById(R.id.tvTimerDisplay);
-        tvSessionStatus = findViewById(R.id.tvSessionStatus);
+        tvTimerDisplay      = findViewById(R.id.tvTimerDisplay);
+        tvSessionStatus     = findViewById(R.id.tvSessionStatus);
         tvSessionsCompleted = findViewById(R.id.tvSessionsCompleted);
         tvMotivationalQuote = findViewById(R.id.tvMotivationalQuote);
-        btnStartStop = findViewById(R.id.btnStartStop);
-        btnReset = findViewById(R.id.btnReset);
-        btnSkip = findViewById(R.id.btnSkip);
-        chipFocus = findViewById(R.id.chipFocus);
-        chipBreak = findViewById(R.id.chipBreak);
-        chipRest = findViewById(R.id.chipRest);
-        sessionDotsContainer = findViewById(R.id.sessionDotsContainer);
+        btnStartStop        = findViewById(R.id.btnStartStop);
+        btnReset            = findViewById(R.id.btnReset);
+        btnSkip             = findViewById(R.id.btnSkip);
+        chipFocus           = findViewById(R.id.chipFocus);
+        chipBreak           = findViewById(R.id.chipBreak);
+        chipRest            = findViewById(R.id.chipRest);
+        sessionDotsContainer= findViewById(R.id.sessionDotsContainer);
+
+        // Botones de navegación
+        findViewById(R.id.btnStats).setOnClickListener(v ->
+                Toast.makeText(this, "Estadísticas próximamente", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.btnSettings).setOnClickListener(v ->
+                Toast.makeText(this, "Configuración próximamente", Toast.LENGTH_SHORT).show());
 
         // Estado inicial al abrir la app
         timeLeftInMillis = FOCUS_TIME;
         updateTimerDisplay(timeLeftInMillis); // Muestra "25:00"
-        updateChipSelection(); // Resalta chip Enfoque
-        updateDots(); // dibuja los 4 puntos vacíos
+        updateChipSelection();               // Resalta chip Enfoque
+        updateDots();                        // dibuja los 4 puntos vacíos
 
         // Acción del botón Iniciar/Pausar
         btnStartStop.setOnClickListener(v -> {
@@ -94,6 +110,45 @@ public class MainActivity extends AppCompatActivity {
 
         // Skip: salta al siguiente estado sin esperar que termine
         btnSkip.setOnClickListener(v -> skipToNextState());
+
+        // al tocar un chip pregunta si quiere cambiar de modo
+        chipFocus.setOnClickListener(v -> showChipChangeDialog(STATE_FOCUS, "Enfoque"));
+        chipBreak.setOnClickListener(v -> showChipChangeDialog(STATE_BREAK, "Descanso Corto"));
+        chipRest.setOnClickListener(v  -> showChipChangeDialog(STATE_REST,  "Descanso Largo"));
+    }
+
+    // onSaveInstanceState guarda el estado cuando rotas o minimizas la app
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("currentState", currentState);
+        outState.putLong("timeLeftInMillis", timeLeftInMillis);
+        outState.putBoolean("isRunning", isRunning);
+        outState.putInt("focusSessionsCompleted", focusSessionsCompleted);
+    }
+
+    // onRestoreInstanceState restaura lo que guardamos
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        currentState           = savedInstanceState.getInt("currentState");
+        timeLeftInMillis       = savedInstanceState.getLong("timeLeftInMillis");
+        isRunning              = savedInstanceState.getBoolean("isRunning");
+        focusSessionsCompleted = savedInstanceState.getInt("focusSessionsCompleted");
+
+        // Restaurar la pantalla con los valores guardados
+        updateTimerDisplay(timeLeftInMillis);
+        updateChipSelection();
+        updateStatusText();
+        updateDots();
+        tvSessionsCompleted.setText("Sesiones completadas: " + focusSessionsCompleted);
+
+        // Si estaba corriendo cuando se rotó, retomar el timer
+        if (isRunning) {
+            startTimer();
+        } else {
+            btnStartStop.setText("Iniciar");
+        }
     }
 
     // Timer
@@ -140,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
             countDownTimer.cancel();
         }
         isRunning = false;
-        timeLeftInMillis = getTimeForState(currentState); // tiempo inicial del modo actual
+        timeLeftInMillis = getTimeForState(currentState);
         updateTimerDisplay(timeLeftInMillis);
         btnStartStop.setText("Iniciar");
     }
@@ -303,5 +358,30 @@ public class MainActivity extends AppCompatActivity {
                 vibrator.vibrate(500);
             }
         }
+    }
+
+    // muestra un aviso antes de cambiar de modo al tocar un chip
+    // AlertDialog, cuadro de diálogo con botones Aceptar/Cancelar
+    private void showChipChangeDialog(int newState, String modeName) {
+
+        // Si ya estamos en ese modo, no hacer nada
+        if (currentState == newState) return;
+
+        new AlertDialog.Builder(this)
+                .setTitle("Cambiar modo")
+                .setMessage("Quieres cambiar a " + modeName + "? El timer actual se perderá")
+                .setPositiveButton("Aceptar", (dialog, which) -> {
+                    // Cancelar timer actual y cambiar al nuevo modo
+                    if (countDownTimer != null) countDownTimer.cancel();
+                    isRunning        = false;
+                    currentState     = newState;
+                    timeLeftInMillis = getTimeForState(newState);
+                    updateTimerDisplay(timeLeftInMillis);
+                    updateChipSelection();
+                    updateStatusText();
+                    btnStartStop.setText("Iniciar");
+                })
+                .setNegativeButton("Cancelar", null) // no hacer nada si cancela
+                .show();
     }
 }
