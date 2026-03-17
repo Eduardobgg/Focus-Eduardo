@@ -35,8 +35,10 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvTimerDisplay;
     private TextView tvSessionStatus;
     private TextView tvSessionsCompleted;
-    private TextView tvMotivationalQuote; // frase motivacional
+    private TextView tvMotivationalQuote;
     private MaterialButton btnStartStop;
+    private MaterialButton btnReset;
+    private MaterialButton btnSkip;
     private Chip chipFocus, chipBreak, chipRest;
     private LinearLayout sessionDotsContainer;
 
@@ -46,11 +48,12 @@ public class MainActivity extends AppCompatActivity {
     private long timeLeftInMillis;
     private int focusSessionsCompleted = 0; // contador de sesiones
 
-    //  frases que se muestran al iniciar un descanso
+    // frases que se muestran al iniciar un descanso, algunas las saque de un gran personaje de Overwatch
     private final String[] motivationalQuotes = {"¡Buen trabajo! Descansa un momento.", "Cada descanso te hace más productivo.",
-            "El descanso es parte del éxito.", "Respira, recarga y vuelve con más fuerza.", "Pequeños pasos llevan a grandes logros.",
-            "La constancia supera al talento."
-    };
+            "El dolor es un excelente maestro", "Respira, recarga y vuelve con más fuerza.",
+            "Repara tus heridas", "La constancia supera al talento.", "Caerse es una oportunidad para levantarse de nuevo",
+            "Que la tranquilidad te envuelva", "Tómate un momento para meditar", "Encuentra la paz dentro de ti", "Experimenta la tranquilidad",
+            "La tentación de rendirse es mayor justo antes de la victoria"};
 
     // onCreate se ejecuta al abrir la app
     @Override
@@ -59,21 +62,23 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Conectar variables con sus elementos del XML por ID
-        tvTimerDisplay       = findViewById(R.id.tvTimerDisplay);
-        tvSessionStatus      = findViewById(R.id.tvSessionStatus);
-        tvSessionsCompleted  = findViewById(R.id.tvSessionsCompleted);
-        tvMotivationalQuote  = findViewById(R.id.tvMotivationalQuote);
-        btnStartStop         = findViewById(R.id.btnStartStop);
-        chipFocus            = findViewById(R.id.chipFocus);
-        chipBreak            = findViewById(R.id.chipBreak);
-        chipRest             = findViewById(R.id.chipRest);
+        tvTimerDisplay = findViewById(R.id.tvTimerDisplay);
+        tvSessionStatus = findViewById(R.id.tvSessionStatus);
+        tvSessionsCompleted = findViewById(R.id.tvSessionsCompleted);
+        tvMotivationalQuote = findViewById(R.id.tvMotivationalQuote);
+        btnStartStop = findViewById(R.id.btnStartStop);
+        btnReset = findViewById(R.id.btnReset);
+        btnSkip = findViewById(R.id.btnSkip);
+        chipFocus = findViewById(R.id.chipFocus);
+        chipBreak = findViewById(R.id.chipBreak);
+        chipRest = findViewById(R.id.chipRest);
         sessionDotsContainer = findViewById(R.id.sessionDotsContainer);
 
         // Estado inicial al abrir la app
         timeLeftInMillis = FOCUS_TIME;
         updateTimerDisplay(timeLeftInMillis); // Muestra "25:00"
-        updateChipSelection();               // Resalta chip Enfoque
-        updateDots();                        // dibuja los 4 puntos vacíos
+        updateChipSelection(); // Resalta chip Enfoque
+        updateDots(); // dibuja los 4 puntos vacíos
 
         // Acción del botón Iniciar/Pausar
         btnStartStop.setOnClickListener(v -> {
@@ -83,6 +88,12 @@ public class MainActivity extends AppCompatActivity {
                 startTimer();
             }
         });
+
+        // Reset: detiene el timer y regresa al tiempo inicial del modo actual
+        btnReset.setOnClickListener(v -> resetTimer());
+
+        // Skip: salta al siguiente estado sin esperar que termine
+        btnSkip.setOnClickListener(v -> skipToNextState());
     }
 
     // Timer
@@ -91,19 +102,16 @@ public class MainActivity extends AppCompatActivity {
             countDownTimer.cancel();
         }
 
-        // CountDownTimer(tiempo total ms, intervalo de tick ms)
         countDownTimer = new CountDownTimer(timeLeftInMillis, 1000) {
 
             @Override
             public void onTick(long millisUntilFinished) {
-                // Se llama cada 1 segundo
                 timeLeftInMillis = millisUntilFinished;
                 updateTimerDisplay(millisUntilFinished);
             }
 
             @Override
             public void onFinish() {
-                // Se llama cuando llega a cero
                 isRunning = false;
                 onSessionFinished();
             }
@@ -126,31 +134,44 @@ public class MainActivity extends AppCompatActivity {
         btnStartStop.setText("Reanudar");
     }
 
+    // detiene el timer y regresa al tiempo inicial del modo actual
+    private void resetTimer() {
+        if (countDownTimer != null) {
+            countDownTimer.cancel();
+        }
+        isRunning = false;
+        timeLeftInMillis = getTimeForState(currentState); // tiempo inicial del modo actual
+        updateTimerDisplay(timeLeftInMillis);
+        btnStartStop.setText("Iniciar");
+    }
+
+    // cancela el timer actual y avanza al siguiente estado
+    private void skipToNextState() {
+        if (countDownTimer != null) {
+            countDownTimer.cancel();
+        }
+        isRunning = false;
+        goToNextState();
+    }
+
     // se ejecuta cuando el timer llega a cero
     // Si era enfoque, sube el contador y actualiza los puntos
     private void onSessionFinished() {
-        vibrate(); // vibrar al terminar cualquier sesión
+        vibrate();
 
         if (currentState == STATE_FOCUS) {
             focusSessionsCompleted++;
             tvSessionsCompleted.setText("Sesiones completadas: " + focusSessionsCompleted);
             updateDots();
 
-            // mostrar frase aleatoria al terminar enfoque
-            // Math.random() da un número entre 0.0 y 1.0
-            // lo multiplicamos por el tamaño del array para elegir un índice
             int indiceAleatorio = (int)(Math.random() * motivationalQuotes.length);
             tvMotivationalQuote.setText("\"" + motivationalQuotes[indiceAleatorio] + "\"");
 
-            // Toast de sesión completada
             Toast.makeText(this, "¡Sesión completada! Tómate un descanso 🎉",
                     Toast.LENGTH_LONG).show();
         } else {
-            // Toast cuando termina el descanso
             Toast.makeText(this, "¡Descanso terminado! Bien hecho 💪",
                     Toast.LENGTH_SHORT).show();
-
-            // Limpiar la frase cuando regresa a enfoque
             tvMotivationalQuote.setText("");
         }
 
@@ -167,9 +188,9 @@ public class MainActivity extends AppCompatActivity {
     private void goToNextState() {
         if (currentState == STATE_FOCUS) {
             if (focusSessionsCompleted % 4 == 0 && focusSessionsCompleted > 0) {
-                currentState = STATE_REST;  // Cada 4 sesiones: descanso largo
+                currentState = STATE_REST;
             } else {
-                currentState = STATE_BREAK; // Las demás: descanso corto
+                currentState = STATE_BREAK;
             }
         } else {
             currentState = STATE_FOCUS;
@@ -217,7 +238,6 @@ public class MainActivity extends AppCompatActivity {
         ColorStateList borderAccent = ColorStateList.valueOf(
                 ContextCompat.getColor(this, R.color.color_border_accent));
 
-        // Resetear todos a borde normal
         chipFocus.setChipStrokeColor(borderNormal);
         chipBreak.setChipStrokeColor(borderNormal);
         chipRest.setChipStrokeColor(borderNormal);
@@ -250,20 +270,18 @@ public class MainActivity extends AppCompatActivity {
     // dibuja los 4 puntos de sesión dinámicamente
     // Los puntos rellenos = sesiones completadas en el ciclo actual
     private void updateDots() {
-        sessionDotsContainer.removeAllViews(); // Limpiar los puntos anteriores
+        sessionDotsContainer.removeAllViews();
 
         int totalDots  = 4;
-        int filledDots = focusSessionsCompleted % 4; // Cuántos puntos rellenar
+        int filledDots = focusSessionsCompleted % 4;
 
         for (int i = 0; i < totalDots; i++) {
             ImageView dot = new ImageView(this);
 
-            // Tamaño y margen de cada punto
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(40, 40);
             params.setMargins(10, 0, 10, 0);
             dot.setLayoutParams(params);
 
-            // Si el índice es menor a los rellenos, poner punto lleno
             if (i < filledDots) {
                 dot.setImageResource(R.drawable.dot_session_completed);
             } else {
