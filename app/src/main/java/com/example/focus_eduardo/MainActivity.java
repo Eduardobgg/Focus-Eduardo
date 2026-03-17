@@ -6,13 +6,15 @@ package com.example.focus_eduardo;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
-import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,17 +29,19 @@ public class MainActivity extends AppCompatActivity {
     private static final long BREAK_TIME =  5 * 60 * 1000L;
     private static final long REST_TIME  = 15 * 60 * 1000L;
 
-
     // VISTAS
     private TextView       tvTimerDisplay;
     private TextView       tvSessionStatus;
+    private TextView       tvSessionsCompleted;
     private MaterialButton btnStartStop;
     private Chip           chipFocus, chipBreak, chipRest;
+    private LinearLayout   sessionDotsContainer;
 
     private CountDownTimer countDownTimer;
-    private boolean        isRunning    = false;
-    private int            currentState = STATE_FOCUS;
+    private boolean        isRunning              = false;
+    private int            currentState           = STATE_FOCUS;
     private long           timeLeftInMillis;
+    private int            focusSessionsCompleted = 0; //  contador de sesiones
 
     // onCreate se ejecuta al abrir la app
     @Override
@@ -46,17 +50,20 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Conectar variables con sus elementos del XML por ID
-        tvTimerDisplay  = findViewById(R.id.tvTimerDisplay);
-        tvSessionStatus = findViewById(R.id.tvSessionStatus);
-        btnStartStop    = findViewById(R.id.btnStartStop);
-        chipFocus       = findViewById(R.id.chipFocus);
-        chipBreak       = findViewById(R.id.chipBreak);
-        chipRest        = findViewById(R.id.chipRest);
+        tvTimerDisplay       = findViewById(R.id.tvTimerDisplay);
+        tvSessionStatus      = findViewById(R.id.tvSessionStatus);
+        tvSessionsCompleted  = findViewById(R.id.tvSessionsCompleted);
+        btnStartStop         = findViewById(R.id.btnStartStop);
+        chipFocus            = findViewById(R.id.chipFocus);
+        chipBreak            = findViewById(R.id.chipBreak);
+        chipRest             = findViewById(R.id.chipRest);
+        sessionDotsContainer = findViewById(R.id.sessionDotsContainer);
 
         // Estado inicial al abrir la app
         timeLeftInMillis = FOCUS_TIME;
         updateTimerDisplay(timeLeftInMillis); // Muestra "25:00"
         updateChipSelection();               // Resalta chip Enfoque
+        updateDots();                        // dibuja los 4 puntos vacíos
 
         // Acción del botón Iniciar/Pausar
         btnStartStop.setOnClickListener(v -> {
@@ -67,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
 
     // Timer
     private void startTimer() {
@@ -89,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
             public void onFinish() {
                 // Se llama cuando llega a cero
                 isRunning = false;
-                goToNextState();
+                onSessionFinished();
             }
 
         }.start();
@@ -110,6 +116,17 @@ public class MainActivity extends AppCompatActivity {
         btnStartStop.setText("Reanudar");
     }
 
+    // se ejecuta cuando el timer llega a cero
+    // Si era enfoque, sube el contador y actualiza los puntos
+    private void onSessionFinished() {
+        if (currentState == STATE_FOCUS) {
+            focusSessionsCompleted++;
+            tvSessionsCompleted.setText("Sesiones completadas: " + focusSessionsCompleted);
+            updateDots();
+        }
+        goToNextState();
+    }
+
     /**
      * Determina el estado y lo activa automáticamente
      * Regla Pomodoro:
@@ -119,7 +136,11 @@ public class MainActivity extends AppCompatActivity {
      */
     private void goToNextState() {
         if (currentState == STATE_FOCUS) {
-            currentState = STATE_BREAK; // Por ahora siempre descanso corto
+            if (focusSessionsCompleted % 4 == 0 && focusSessionsCompleted > 0) {
+                currentState = STATE_REST;  // Cada 4 sesiones: descanso largo
+            } else {
+                currentState = STATE_BREAK; // Las demás: descanso corto
+            }
         } else {
             currentState = STATE_FOCUS;
         }
@@ -159,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
         tvTimerDisplay.setText(String.format("%02d:%02d", minutes, seconds));
     }
 
-    //Los demás chips quedan con borde gris normal
+    // Los demás chips quedan con borde gris normal
     private void updateChipSelection() {
         ColorStateList borderNormal = ColorStateList.valueOf(
                 ContextCompat.getColor(this, R.color.color_border));
@@ -193,6 +214,33 @@ public class MainActivity extends AppCompatActivity {
             case STATE_FOCUS: tvSessionStatus.setText("Sesión de Enfoque"); break;
             case STATE_BREAK: tvSessionStatus.setText("Descanso Corto");    break;
             case STATE_REST:  tvSessionStatus.setText("Descanso Largo");    break;
+        }
+    }
+
+    // dibuja los 4 puntos de sesión dinámicamente
+    // Los puntos rellenos = sesiones completadas en el ciclo actual
+    private void updateDots() {
+        sessionDotsContainer.removeAllViews(); // Limpiar los puntos anteriores
+
+        int totalDots  = 4;
+        int filledDots = focusSessionsCompleted % 4; // Cuántos puntos rellenar
+
+        for (int i = 0; i < totalDots; i++) {
+            ImageView dot = new ImageView(this);
+
+            // Tamaño y margen de cada punto
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(40, 40);
+            params.setMargins(10, 0, 10, 0);
+            dot.setLayoutParams(params);
+
+            // Si el índice es menor a los rellenos, poner punto lleno
+            if (i < filledDots) {
+                dot.setImageResource(R.drawable.dot_session_completed);
+            } else {
+                dot.setImageResource(R.drawable.dot_session_empty);
+            }
+
+            sessionDotsContainer.addView(dot);
         }
     }
 }
